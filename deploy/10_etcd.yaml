@@ -29,7 +29,7 @@ metadata:
     app.kubernetes.io/component: piraeus-etcd
 spec:
   serviceName: piraeus-etcd
-  replicas: 3
+  replicas: 1
   updateStrategy:
     type: RollingUpdate
   selector:

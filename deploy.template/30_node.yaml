@@ -11,7 +11,6 @@ data:
   POOL_BASE_DIR: #@ "/var/lib/" + name() + "/storagepools"
   DRBD_IMG_TAG: v9.0.21 #! "none" will skip drbd installation
   DRBD_IMG_PULL_POLICY: IfNotPresent
-  MAP_HOST_LVM: 'true'
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -42,10 +41,10 @@ spec:
       hostPID: true
       hostIPC: true
       dnsPolicy: ClusterFirstWithHostNet
-      initContainers:
-      - name: init
-        image: #@ initimage()
-        imagePullPolicy: IfNotPresent
+      containers:
+      - name: oci
+        image: daocloud.io/piraeus/piraeus-oci:v0.1
+        imagePullPolicy: Always
         securityContext:
           privileged: true
         resources:
@@ -62,11 +61,7 @@ spec:
         - name: POD_UID
           valueFrom:
             fieldRef:
-              fieldPath: metadata.uid        
-        - name: POD_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
+              fieldPath: metadata.uid
         - name: POD_NAME
           valueFrom:
             fieldRef:
@@ -75,130 +70,62 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
-        args:
-            - initNode
+        - name: NODE_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
         volumeMounts:
         - name: timezone
           mountPath: /etc/localtime
-        - name: init
-          mountPath: /init
         - name: dockersock
           mountPath: /var/run/docker.sock
+        - name: systemd
+          mountPath: /etc/systemd/system
+        - name: lib-linstor-d
+          mountPath: /var/lib/linstor.d
+        - name: etc-linstor
+          mountPath: /etc/linstor
         - name: usr-src
           mountPath: /usr/src
         - name: lib-modules
           mountPath: /lib/modules
         - name: #@ "opt-" + name()
           mountPath: #@ "/opt/" + name()
-      containers:
-      - name: satellite
-        image: #@ satelliteimage()
-        imagePullPolicy: IfNotPresent
-        securityContext:
-          privileged: true
-        resources:
-          #! requests:
-          #!   cpu: '100m'
-          #!   memory: '200Mi'
-          limits:
-            cpu: 300m
-            memory: 300Mi
-        envFrom:
-        - configMapRef:
-            name:  #@ node()
-        env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: NODE_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: spec.nodeName
-        #@ if name() == "piraeus":
-        args:
-        - startSatellite
-        - --stack-traces
-        #@ end
         readinessProbe:
           successThreshold: 3
           failureThreshold: 3
           tcpSocket:
             port: 3366
           periodSeconds: 5
-        volumeMounts:
-        - name: timezone
-          mountPath: /etc/localtime
-        - name: init
-          mountPath: /init
-        - name: init
-          mountPath: /usr/bin/pre-start.sh
-          subPath: bin/prestart-node.sh
-        - name: log
-          mountPath: /var/log/linstor-satellite
-        - name: #@ "var-lib-" + name()
-          mountPath: #@ "/var/lib/" + name()
-        - name: dev
-          mountPath: /dev
-        - name: lib-modules
-          mountPath: /lib/modules
-        #@ if map_host_lvm():
-        - name: run-lvm
-          mountPath: /run/lvm
-        - name: run-udev
-          mountPath: /run/udev
-        #@ end
-        #@ if map_host_linstor():
-        - name: var-lib-linstor-d
-          mountPath: /var/lib/linstor.d
-        #@ end
       volumes:
       - name: timezone
         hostPath:
           path: #@ timezone()
-      - name: init
-        emptyDir: {}
       - name: #@ "opt-" + name()
         hostPath:
           path: #@ "/opt/" + name()
       - name: #@ "var-lib-" + name()
         hostPath:
           path: #@ "/var/lib/" + name()
-      - name: log
+      - name: lib-linstor-d
         hostPath:
-          path: #@ "/var/log/"+ name() + "/linstor-satellite"
-      - name: dev
+          path: /var/lib/linstor.d
+      - name: etc-linstor
         hostPath:
-          path: /dev
+          path: /etc/linstor
       - name: dockersock
         hostPath:
           path: /var/run/docker.sock
           type: Socket
+      - name: systemd
+        hostPath:
+          path: /etc/systemd/system
       - name: usr-src
         hostPath:
           path: /usr/src
       - name: lib-modules
         hostPath:
           path: /lib/modules
-      #@ if map_host_lvm():
-      - name: run-lvm
-        hostPath:           
-          path: /run/lvm
-      - name: run-udev
-        hostPath:           
-          path: /run/udev 
-      #@ end
-      #@ if map_host_linstor():
-      - name: etc-drbd-d
-        hostPath:
-          path: /etc/drbd.d
-      - name: var-lib-linstor-d
-        hostPath:
-          path: /var/lib/linstor.d
-      - name: etc-linstor
-        hostPath:
-          path: /etc/linstor
-      #@ end
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

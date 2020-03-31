@@ -86,8 +86,8 @@ spec:
           #!   cpu: 500m
           #!   memory: 500Mi
           limits:
-            cpu: 500m
-            memory: 500Mi
+            cpu: '2'
+            memory: 1Gi
         ports:
         - name: rest-api
           containerPort: 3370
