@@ -1,0 +1,156 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: piraeus-scaler
+  namespace: piraeus-system
+data:
+  INIT_DEBUG: "false"
+  LS_CONTROLLERS: piraeus-controller.piraeus-system.svc.cluster.local:3370
+  POOL_BASE_DIR: /var/lib/piraeus/storagepools
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: piraeus-scaler-task
+  namespace: piraeus-system
+data:
+  task: ""
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: piraeus-scaler
+  namespace: piraeus-system
+spec:
+  minReadySeconds: 0
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: piraeus
+      app.kubernetes.io/component: piraeus-scaler
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: piraeus
+        app.kubernetes.io/component: piraeus-scaler
+    spec:
+      restartPolicy: Always
+      hostNetwork: true
+      hostPID: true
+      hostIPC: true
+      dnsPolicy: ClusterFirstWithHostNet
+      initContainers:
+      - name: init
+        image: quay.io/piraeusdatastore/piraeus-init:v0.5.4
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi
+        envFrom:
+        - configMapRef:
+            name: piraeus-scaler
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        args:
+        - initScaler
+        volumeMounts:
+        - name: timezone
+          mountPath: /etc/localtime
+        - name: init
+          mountPath: /init
+      containers:
+      - name: scaler
+        image: quay.io/piraeusdatastore/piraeus-client:latest
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          privileged: true
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi
+        envFrom:
+        - configMapRef:
+            name: piraeus-scaler
+        env:
+        - name: POD_UID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.uid
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        command:
+        - /init/bin/run-scaler.sh
+        volumeMounts:
+        - name: timezone
+          mountPath: /etc/localtime
+        - name: init
+          mountPath: /init
+        - name: run
+          mountPath: /var/run/task
+          subPath: task
+        - name: var-lib-piraeus
+          mountPath: /var/lib/piraeus
+        - name: dockersock
+          mountPath: /var/run/docker.sock
+        - name: usr-src
+          mountPath: /usr/src
+        - name: lib-modules
+          mountPath: /lib/modules
+      volumes:
+      - name: timezone
+        hostPath:
+          path: /usr/share/zoneinfo/Etc/UTC
+      - name: init
+        emptyDir: {}
+      - name: run
+        configMap:
+          name: piraeus-scaler-task
+          items:
+          - key: task
+            path: task
+            mode: 493
+      - name: var-lib-piraeus
+        hostPath:
+          path: /var/lib/piraeus
+      - name: dev
+        hostPath:
+          path: /dev
+      - name: dockersock
+        hostPath:
+          path: /var/run/docker.sock
+          type: Socket
+      - name: usr-src
+        hostPath:
+          path: /usr/src
+      - name: lib-modules
+        hostPath:
+          path: /lib/modules
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: piraeus/node
+                operator: In
+                values:
+                - "true"
+              - key: node-role.kubernetes.io/master
+                operator: DoesNotExist
+      tolerations:
+      - operator: Exists
+        effect: NoSchedule
+      - key: CriticalAddonsOnly
+        operator: Exists

@@ -1,0 +1,85 @@
+#@ load("@ytt:data", "data")
+
+#@ def name():
+#@   return data.values.name
+#@ end
+
+#@ def namespace():
+#@   return data.values.namespace
+#@ end
+
+#@ def timezone():
+#@   return data.values.timezone
+#@ end
+
+#@ def map_host_linstor():
+#@   return data.values.map_host_linstor
+#@ end
+
+#@ def map_host_lvm():
+#@   return data.values.map_host_lvm
+#@ end
+
+#@ def etcd():
+#@   return name() + "-etcd"
+#@ end
+
+#@ def etcdendpoint():
+#@   return name() + "-etcd." + namespace() + ".svc.cluster.local:2379"
+#@ end
+
+#@ def node():
+#@   return name() + "-node"
+#@ end
+
+#@ def csinode():
+#@   return name() + "-csi-node"
+#@ end
+
+#@ def csicontroller():
+#@   return name() + "-csi-controller"
+#@ end
+
+#@ def controller():
+#@   return name() + "-controller"
+#@ end
+
+#@ def controllerhostport():
+#@   return name() + "-controller." + namespace() + ".svc.cluster.local:3370"
+#@ end
+
+#@ def registry():
+#@   return data.values.registry
+#@ end
+
+#@ def imageversion(img, version):
+#@   return registry() + "/" + img + ":" + version
+#@ end
+
+#@ def initimage():
+#@   return imageversion(data.values.images.init, data.values.initversion)
+#@ end
+
+#@ def controllerimage():
+#@   return imageversion(data.values.images.controller, data.values.contsatversion)
+#@ end
+
+#@ def satelliteimage():
+#@   return imageversion(data.values.images.satellite, data.values.contsatversion)
+#@ end
+
+#@ def csiimage():
+#@   return imageversion(data.values.images.csi, data.values.csiversion)
+#@ end
+
+#@ def clientimage():
+#@   return imageversion(data.values.images.client, data.values.clientversion)
+#@ end
+
+#@ def set_priority_class():
+#@   if namespace() == "kube-system":
+#@     return True
+#@   else:
+#@     return data.values.set_priority_class
+#@   end
+#@ end

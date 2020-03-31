@@ -1,0 +1,151 @@
+#@ load("funcs.lib.yml", "name", "namespace", "timezone", "controller", "initimage", "etcdendpoint", "controllerimage", "controllerhostport", "set_priority_class")
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: #@ controller()
+  namespace: #@ namespace()
+data:
+  INIT_DEBUG: 'false'
+  ETCD_ENDPOINTS: #@ etcdendpoint()
+  LS_CONTROLLERS: #@ controllerhostport()
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: #@ controller()
+  namespace: #@ namespace()
+  labels:
+    app.kubernetes.io/name: #@ name()
+    app.kubernetes.io/component: #@ controller()
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3370
+    name: rest-api
+    targetPort: 3370
+  selector:
+    app.kubernetes.io/name: #@ name()
+    app.kubernetes.io/component: #@ controller()
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: #@ controller()
+  namespace: #@ namespace()
+  labels:
+    app.kubernetes.io/name: #@ name()
+    app.kubernetes.io/component: #@ controller()
+spec:
+  serviceName: #@ controller()
+  updateStrategy:
+    type: RollingUpdate
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: #@ name()
+      app.kubernetes.io/component: #@ controller()
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: #@ name()
+        app.kubernetes.io/component: #@ controller()
+    spec:
+      #@ if set_priority_class():
+      priorityClassName: system-cluster-critical
+      #@ end
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 0
+      dnsPolicy: ClusterFirst
+      initContainers:
+      - name: init
+        image: #@ initimage()
+        imagePullPolicy: IfNotPresent
+        resources:
+          #! requests:
+          #!   cpu: 50m
+          #!   memory: 50Mi
+          limits:
+            cpu: 100m
+            memory: 100Mi
+        envFrom:
+            - configMapRef:
+                name: #@ controller()
+        args:
+            - initController
+        volumeMounts:
+        - name: timezone
+          mountPath: /etc/localtime
+        - name: init
+          mountPath: /init
+      containers:
+      - name: controller
+        image: #@ controllerimage()
+        imagePullPolicy: IfNotPresent
+        resources:
+          #! requests:
+          #!   cpu: 500m
+          #!   memory: 500Mi
+          limits:
+            cpu: 500m
+            memory: 500Mi
+        ports:
+        - name: rest-api
+          containerPort: 3370
+          hostPort: 3370
+        - name: plain
+          containerPort: 3376
+          hostPort: 3376
+        - name: ssl
+          containerPort: 3377
+          hostPort: 3377
+        env:
+        - name: THIS_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        #@ if name() == "piraeus":
+        args:
+        - startController
+        - --stack-traces
+        #@ end
+        readinessProbe:
+          successThreshold: 3
+          failureThreshold: 3
+          httpGet:
+            port: 3370
+          periodSeconds: 5
+        volumeMounts:
+        - name: timezone
+          mountPath: /etc/localtime
+        - name: init
+          mountPath: /etc/linstor
+          subPath: etc/linstor
+        - name: log
+          mountPath: /var/log/linstor-controller
+      volumes:
+      - name: timezone
+        hostPath:
+          path: #@ timezone()
+      - name: init
+        emptyDir: {}
+      - name: log
+        hostPath:
+          path: #@ "/var/log/" + name() + "/linstor-controller"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              #! - key: #@ name() + "/controller"
+              #!   operator: In
+              #!   values:
+              #!   - "true"
+              - key: node-role.kubernetes.io/master
+                operator: DoesNotExist
+      tolerations:
+      - operator: Exists
+        effect: NoSchedule
+      - key: CriticalAddonsOnly
+        operator: Exists
+      #! imagePullSecrets:
+      #! - name: piraeus-regcred

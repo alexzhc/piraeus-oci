@@ -1,0 +1,170 @@
+#@ load("funcs.lib.yml", "name", "namespace", "timezone", "etcd", "etcdendpoint", "initimage", "set_priority_class")
+#! dns service for stable DNS entries of StatefulSet members.
+#! https://kubernetes.io/docs/tasks/run-application/run-replicated-stateful-application/
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: #@ etcd()
+  namespace: #@ namespace()
+  labels:
+    app.kubernetes.io/name: #@ name()
+    app.kubernetes.io/component: #@ etcd()
+spec:
+  type: ClusterIP
+  #! publishNotReadyAddresses: true
+  ports:
+  - name: client
+    port: 2379
+    targetPort: 2379
+  - name: peer
+    port: 2380
+    targetPort: 2380
+  selector:
+    app.kubernetes.io/name: #@ name()
+    app.kubernetes.io/component: #@ etcd()
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: #@ etcd()
+  namespace: #@ namespace()
+  labels:
+    app.kubernetes.io/name: #@ name()
+    app.kubernetes.io/component: #@ etcd()
+spec:
+  serviceName: #@ etcd()
+  #! podManagementPolicy: Parallel
+  replicas: 3
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: #@ name()
+      app.kubernetes.io/component: #@ etcd()
+  template:
+    metadata:
+      name: #@ etcd()
+      labels:
+        app.kubernetes.io/name: #@ name()
+        app.kubernetes.io/component: #@ etcd()
+    spec:
+      #@ if set_priority_class():
+      priorityClassName: system-node-critical
+      #@ end
+      restartPolicy: Always
+      dnsPolicy: ClusterFirst
+      initContainers:
+      - name: init
+        image: #@ initimage()
+        imagePullPolicy: Always
+        resources:
+          #! requests:
+          #!   cpu: 50m
+          #!   memory: 50Mi
+          limits:
+            cpu: 100m
+            memory: 100Mi
+        env:
+        - name: ETCD_ENDPOINT
+          value: #@ etcdendpoint()
+        - name: PEER_PORT
+          value: '2380'
+        - name: CLIENT_PORT
+          value: '2379'
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        args:
+            - initEtcd
+        volumeMounts:
+        - name: timezone
+          mountPath: /etc/localtime
+        - name: init
+          mountPath: /init
+        - name: data
+          mountPath: /var/lib/etcd
+      containers:
+      - name: etcd
+        image: quay.io/coreos/etcd:v3.4.5
+        imagePullPolicy: IfNotPresent
+        resources:
+          #! requests:
+          #!   cpu: 100m
+          #!   memory: 100Mi
+          limits:
+            cpu: 100m
+            memory: 100Mi
+        ports:
+        - name: client
+          containerPort: 2379
+        - name: peer
+          containerPort: 2380
+        command:
+        - etcd
+        args:
+        - --config-file
+        - /etc/etcd/etcd.conf
+        readinessProbe:
+          successThreshold: 3
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 2379
+          periodSeconds: 5
+        lifecycle:
+          preStop:
+            exec:
+              command: [ prestop ]
+        volumeMounts:
+        - name: timezone
+          mountPath: /etc/localtime
+        - name: init
+          mountPath: /etc/etcd
+          subPath: etc/etcd
+        - name: init
+          mountPath: /usr/local/bin/prestop
+          subPath: bin/prestop-etcd.sh
+        - name: data
+          mountPath: /var/lib/etcd
+      volumes:
+      - name: timezone
+        hostPath:
+          path: #@ timezone()
+      - name: init
+        emptyDir: {}
+      - name: data
+        hostPath:
+          path: #@ "/var/lib/" + name() + "/etcd"
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/component
+                operator: In
+                values:
+                - #@ etcd()
+            topologyKey: kubernetes.io/hostname
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              #! - key: piraeus/etcd
+              #!   operator: In
+              #!   values:
+              #!     - "true"
+              - key: node-role.kubernetes.io/master
+                operator: DoesNotExist
+      tolerations:
+      - operator: Exists
+        effect: NoSchedule
+      - key: CriticalAddonsOnly
+        operator: Exists
+      #! imagePullSecrets:
+      #! - name: piraeus-regcred
