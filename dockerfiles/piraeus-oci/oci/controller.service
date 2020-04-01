@@ -1,0 +1,18 @@
+[Unit]
+Description=Piraeus controller OCI Container
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/default/%p
+WorkingDirectory=/opt/piraeus/controller/oci
+ExecStartPre=/bin/sh -c "/opt/piraeus/bin/runc delete -f piraeus-controller || true"
+ExecStart=/opt/piraeus/bin/runc run --pid-file=/run/piraeus-controller.pid piraeus-controller
+ExecStopPost=/opt/piraeus/bin/runc delete -f piraeus-controller
+PIDFile=/run/piraeus-controller.pid
+Restart=always
+RestartSec=5
+RestartPreventExitStatus=10
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target

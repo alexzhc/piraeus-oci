@@ -7,7 +7,10 @@
             "gid": 0
         },
         "args": [
-            ${ARGS}
+            "/usr/share/linstor-server/bin/Controller",
+            "--logs=/var/log/linstor-controller",
+            "--config-directory=/etc/linstor",
+            "--rest-bind=0.0.0.0:3370"
         ],
         "env": [
             ${ENV}
@@ -155,15 +158,6 @@
                 "rbind"
             ],
             "source": "/etc/localtime",
-            "type": "bind"
-        },
-        {
-            "destination": "/var/lib/linstor.d",
-            "options": [
-                "rw",
-                "rbind"
-            ],
-            "source": "/var/lib/linstor.d",
             "type": "bind"
         },
         {

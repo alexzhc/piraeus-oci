@@ -6,6 +6,7 @@ metadata:
 data:
   INIT_DEBUG: "false"
   LS_CONTROLLERS: piraeus-controller.piraeus-system.svc.cluster.local:3370
+  SERVER_IMG: quay.azk8s.cn/piraeusdatastore/piraeus-server:v1.4.2
   POOL_BASE_DIR: /var/lib/piraeus/storagepools
   DRBD_IMG_TAG: v9.0.21
   DRBD_IMG_PULL_POLICY: IfNotPresent
@@ -66,6 +67,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.hostIP
+        args:
+        - node
         volumeMounts:
         - name: timezone
           mountPath: /etc/localtime
@@ -83,6 +86,8 @@ spec:
           mountPath: /lib/modules
         - name: opt-piraeus
           mountPath: /opt/piraeus
+        - name: var-lib-piraeus
+          mountPath: var-lib-piraeus
         readinessProbe:
           successThreshold: 3
           failureThreshold: 3

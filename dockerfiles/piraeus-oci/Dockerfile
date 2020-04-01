@@ -33,8 +33,8 @@ RUN set -x && \
     apt-get clean
 
 # add scripts
-COPY tmpl /tmpl
+COPY oci /oci
 
-COPY entry.sh /usr/bin/
+COPY bin/ /usr/local/bin/
 
 ENTRYPOINT [ "entry.sh" ]

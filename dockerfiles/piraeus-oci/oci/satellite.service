@@ -1,0 +1,18 @@
+[Unit]
+Description=Piraeus Satellite OCI Container
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/default/%p
+WorkingDirectory=/opt/piraeus/satellite/oci
+ExecStartPre=/bin/sh -c "/opt/piraeus/bin/runc delete -f piraeus-satellite || true"
+ExecStart=/opt/piraeus/bin/runc run --pid-file=/run/piraeus-satellite.pid piraeus-satellite
+ExecStopPost=/opt/piraeus/bin/runc delete -f piraeus-satellite
+PIDFile=/run/piraeus-satellite.pid
+Restart=always
+RestartSec=5
+RestartPreventExitStatus=10
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target
