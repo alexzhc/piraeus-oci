@@ -1,5 +1,8 @@
 # OCI Monitor Pod for Piraeus
 
+## Design Principle
+The workflow does a `best effort` to register each node (with its default pool) to the controller. But no registration failure shall block the node process to come up. Users may use `linstor node` command sets to fix the registration manually.
+
 ## Workflow
 
 ### Controller

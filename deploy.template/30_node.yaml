@@ -43,7 +43,7 @@ spec:
       hostIPC: true
       dnsPolicy: ClusterFirstWithHostNet
       containers:
-      - name: oci
+      - name: oci-monitor
         image: daocloud.io/piraeus/piraeus-oci:v0.1
         imagePullPolicy: Always
         securityContext:
