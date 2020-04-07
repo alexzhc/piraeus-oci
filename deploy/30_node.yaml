@@ -87,7 +87,7 @@ spec:
         - name: opt-piraeus
           mountPath: /opt/piraeus
         - name: var-lib-piraeus
-          mountPath: var-lib-piraeus
+          mountPath: /var/lib/piraeus
         readinessProbe:
           successThreshold: 3
           failureThreshold: 3
