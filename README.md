@@ -3,7 +3,7 @@
 ## Workflow
 
 ### Controller
-1. wait for etcd to come up by curl etcd_url:2379 for json output of `health`
+1. wait for etcd to come up by `curl <etcd_url>:2379` for json output of `health`
 1. drop systemd file to `/etc/systemd/system/piraeus-controller.service`
 1. drop runc binary to `/opt/piraeus/bin/runc`
 1. add k8s envs to `/opt/piraeus/controller/oci/config.json`
@@ -14,7 +14,7 @@
 1. monitor controller status by k8s `readiness probe` to `http:3370`
 
 ### Node
-1. wait for controller to come up by `curl controller_url:3370` for http reply
+1. wait for controller to come up by `curl <controller_url>:3370` for http reply
 1. register node to controller: it will come up in `OFFLINE` status
 1. drop systemd file to `/etc/systemd/system/piraeus-satellite.service`
 1. drop runc binary to `/opt/piraeus/bin/runc`
