@@ -29,6 +29,6 @@
 
 ### DRBD and other tools on the host
 On the node hosts, install following rpm or deb:
-drbd9.rpm/deb
-drbd-utils.rpm/deb
-drbd-top.rpm/deb
+1. drbd9.rpm/deb
+2. drbd-utils.rpm/deb
+3. drbd-top.rpm/deb
