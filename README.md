@@ -16,6 +16,7 @@ On the node hosts, install following rpm or deb:
 1. drop systemd file to `/etc/systemd/system/piraeus-controller.service`
 1. drop runc binary to `/opt/piraeus/bin/runc`
 1. add k8s envs to `/opt/piraeus/controller/oci/config.json`
+1. drop /etc/resolv.conf to `/opt/piraeus/controller/oci/resolv.conf`
 1. drop oci config to `/opt/piraeus/controller/oci/config.json`
 1. drop oci rootfs to `/opt/piraeus/controller/oci/rootfs` by `docker export $( docker create )` or by overriding entrypoint:
     ```
@@ -49,6 +50,7 @@ On the node hosts, install following rpm or deb:
 1. drop systemd file to `/etc/systemd/system/piraeus-satellite.service`
 1. drop runc binary to `/opt/piraeus/bin/runc`
 1. add k8s envs to `/opt/piraeus/satellite/oci/config.json`
+1. drop /etc/resolv.conf to `/opt/piraeus/satellite/oci/resolv.conf`
 1. drop oci config to `/opt/piraeus/satellite/oci/config.json`
 1. drop oci rootfs to `/opt/piraeus/satellite/oci/rootfs` by `docker export $( docker create )`
 1. drop client script to `/opt/piraeus/client/linstor.sh`
