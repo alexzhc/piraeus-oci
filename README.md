@@ -17,10 +17,31 @@ On the node hosts, install following rpm or deb:
 1. drop runc binary to `/opt/piraeus/bin/runc`
 1. add k8s envs to `/opt/piraeus/controller/oci/config.json`
 1. drop oci config to `/opt/piraeus/controller/oci/config.json`
-1. drop oci rootfs to `/opt/piraeus/controller/oci/rootfs` by `docker export $( docker create )`
+1. drop oci rootfs to `/opt/piraeus/controller/oci/rootfs` by `docker export $( docker create )` or by overriding entrypoint:
+    ```
+    docker run --rm \
+    -v /var/lib/piraeus/controller/oci/rootfs:/drop
+    --entrypoint cp \
+    piruaes-server \
+    /* /drop
+    ```
 1. drop client script to `/opt/piraeus/client/linstor.sh`
+    ```
+    cat > /opt/piraeus/client/linstor.sh <<'EOF'
+    /opt/piraeus/bin/runc exec -it piraeus-controller \
+    linstor --no-utf8 $@
+    EOF
+    ```
 1. `systemctl enable --now piraeus-controller`
 1. monitor controller status by k8s `readiness probe` to `http:3370`
+```
+        readinessProbe:
+          successThreshold: 3
+          failureThreshold: 3
+          httpGet:
+            port: 3370
+          periodSeconds: 5
+```
 
 ### Node
 1. wait for controller to come up by `curl <controller_url>:3370` for http reply
@@ -35,3 +56,11 @@ On the node hosts, install following rpm or deb:
 1. wait for node to enter `ONLINE` status by `curl <controller_url>:3370` for json output of `node list`
 1. add `/var/lib/piraeus/storagepools/DfltStorPool` to a fileThin backend pool called `DfltStorPool` 
 1. monitor node status by k8s `readiness probe` to `tcp:3366`
+```
+        readinessProbe:
+          successThreshold: 3
+          failureThreshold: 3
+          tcpSocket:
+            port: 3366
+          periodSeconds: 5
+```
