@@ -171,6 +171,7 @@ metadata:
   namespace: piraeus-system
 data:
   INIT_DEBUG: "false"
+  SERVER_IMG: quay.io/piraeusdatastore/piraeus-server:v1.4.2
   ETCD_ENDPOINTS: piraeus-etcd.piraeus-system.svc.cluster.local:2379
   LS_CONTROLLERS: piraeus-controller.piraeus-system.svc.cluster.local:3370
 ---
@@ -216,34 +217,20 @@ spec:
         app.kubernetes.io/component: piraeus-controller
     spec:
       restartPolicy: Always
-      terminationGracePeriodSeconds: 0
-      dnsPolicy: ClusterFirst
-      initContainers:
-      - name: init
-        image: quay.io/piraeusdatastore/piraeus-init:v0.5.4
-        imagePullPolicy: IfNotPresent
-        resources:
-          limits:
-            cpu: 100m
-            memory: 100Mi
-        envFrom:
-        - configMapRef:
-            name: piraeus-controller
-        args:
-        - initController
-        volumeMounts:
-        - name: timezone
-          mountPath: /etc/localtime
-        - name: init
-          mountPath: /init
+      hostNetwork: true
+      hostPID: true
+      hostIPC: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
-      - name: controller
-        image: quay.io/piraeusdatastore/piraeus-server:v1.4.2
+      - name: oci-monitor
+        image: daocloud.io/piraeus/piraeus-oci:v0.1
         imagePullPolicy: IfNotPresent
+        securityContext:
+          privileged: true
         resources:
           limits:
-            cpu: "2"
-            memory: 1Gi
+            cpu: 200m
+            memory: 200Mi
         ports:
         - name: rest-api
           containerPort: 3370
@@ -254,14 +241,28 @@ spec:
         - name: ssl
           containerPort: 3377
           hostPort: 3377
+        envFrom:
+        - configMapRef:
+            name: piraeus-controller
         env:
-        - name: THIS_POD_IP
+        - name: POD_UID
           valueFrom:
             fieldRef:
-              fieldPath: status.podIP
+              fieldPath: metadata.uid
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: NODE_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
         args:
-        - startController
-        - --stack-traces
+        - controller
         readinessProbe:
           successThreshold: 3
           failureThreshold: 3
@@ -271,20 +272,36 @@ spec:
         volumeMounts:
         - name: timezone
           mountPath: /etc/localtime
-        - name: init
+        - name: dockersock
+          mountPath: /var/run/docker.sock
+        - name: systemd
+          mountPath: /etc/systemd/system
+        - name: etc-linstor
           mountPath: /etc/linstor
-          subPath: etc/linstor
-        - name: log
-          mountPath: /var/log/linstor-controller
+        - name: opt-piraeus
+          mountPath: /opt/piraeus
+        - name: var-lib-piraeus
+          mountPath: /var/lib/piraeus
       volumes:
       - name: timezone
         hostPath:
           path: /usr/share/zoneinfo/Etc/UTC
-      - name: init
-        emptyDir: {}
-      - name: log
+      - name: opt-piraeus
         hostPath:
-          path: /var/log/piraeus/linstor-controller
+          path: /opt/piraeus
+      - name: var-lib-piraeus
+        hostPath:
+          path: /var/lib/piraeus
+      - name: etc-linstor
+        hostPath:
+          path: /etc/linstor
+      - name: dockersock
+        hostPath:
+          path: /var/run/docker.sock
+          type: Socket
+      - name: systemd
+        hostPath:
+          path: /etc/systemd/system
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -306,7 +323,7 @@ metadata:
 data:
   INIT_DEBUG: "false"
   LS_CONTROLLERS: piraeus-controller.piraeus-system.svc.cluster.local:3370
-  SERVER_IMG: quay.azk8s.cn/piraeusdatastore/piraeus-server:v1.4.2
+  SERVER_IMG: quay.io/piraeusdatastore/piraeus-server:v1.4.2
   POOL_BASE_DIR: /var/lib/piraeus/storagepools
   DRBD_IMG_TAG: v9.0.21
   DRBD_IMG_PULL_POLICY: IfNotPresent
@@ -338,15 +355,15 @@ spec:
       hostIPC: true
       dnsPolicy: ClusterFirstWithHostNet
       containers:
-      - name: oci
+      - name: oci-monitor
         image: daocloud.io/piraeus/piraeus-oci:v0.1
         imagePullPolicy: Always
         securityContext:
           privileged: true
         resources:
           limits:
-            cpu: 100m
-            memory: 100Mi
+            cpu: 200m
+            memory: 200Mi
         envFrom:
         - configMapRef:
             name: piraeus-node
@@ -369,6 +386,12 @@ spec:
               fieldPath: status.hostIP
         args:
         - node
+        readinessProbe:
+          successThreshold: 3
+          failureThreshold: 3
+          tcpSocket:
+            port: 3366
+          periodSeconds: 5
         volumeMounts:
         - name: timezone
           mountPath: /etc/localtime
@@ -387,13 +410,7 @@ spec:
         - name: opt-piraeus
           mountPath: /opt/piraeus
         - name: var-lib-piraeus
-          mountPath: var-lib-piraeus
-        readinessProbe:
-          successThreshold: 3
-          failureThreshold: 3
-          tcpSocket:
-            port: 3366
-          periodSeconds: 5
+          mountPath: /var/lib/piraeus
       volumes:
       - name: timezone
         hostPath:

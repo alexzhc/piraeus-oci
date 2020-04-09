@@ -8,7 +8,7 @@ data:
   INIT_DEBUG: 'false'
   #! Must be an FQDN here, otherwise it might not resolve!
   LS_CONTROLLERS: #@ controllerhostport()
-  SERVER_IMG: quay.azk8s.cn/piraeusdatastore/piraeus-server:v1.4.2
+  SERVER_IMG: quay.io/piraeusdatastore/piraeus-server:v1.4.2
   POOL_BASE_DIR: #@ "/var/lib/" + name() + "/storagepools"
   DRBD_IMG_TAG: v9.0.21 #! "none" will skip drbd installation
   DRBD_IMG_PULL_POLICY: IfNotPresent
@@ -53,8 +53,8 @@ spec:
           #!   cpu: 100m
           #!   memory: 100Mi
           limits:
-            cpu: 100m
-            memory: 100Mi
+            cpu: 200m
+            memory: 200Mi
         envFrom:
         - configMapRef:
             name:  #@ node()
@@ -76,6 +76,12 @@ spec:
             fieldRef:
               fieldPath: status.hostIP
         args: [ node ]
+        readinessProbe:
+          successThreshold: 3
+          failureThreshold: 3
+          tcpSocket:
+            port: 3366
+          periodSeconds: 5
         volumeMounts:
         - name: timezone
           mountPath: /etc/localtime
@@ -94,13 +100,7 @@ spec:
         - name: #@ "opt-" + name()
           mountPath: #@ "/opt/" + name()
         - name: #@ "var-lib-" + name()
-          mountPath: #@ "var-lib-" + name()     
-        readinessProbe:
-          successThreshold: 3
-          failureThreshold: 3
-          tcpSocket:
-            port: 3366
-          periodSeconds: 5
+          mountPath: #@ "/var/lib/" + name()     
       volumes:
       - name: timezone
         hostPath:

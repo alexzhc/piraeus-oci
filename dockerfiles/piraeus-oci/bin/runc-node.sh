@@ -1,8 +1,6 @@
 #!/bin/bash -x
 
-_host() { 
-    nsenter -t1 -m "$@" 
-}
+source lib.runc.sh
 
 # wait until controller is up
 SECONDS=0
@@ -20,39 +18,9 @@ done
 [[ "$( linstor --machine node list --node "$NODE_NAME" | jq -r '.[0].nodes[0]' )" == 'null' ]] && \
 linstor node create --node-type Satellite "$NODE_NAME" "$NODE_IP"
 
-# stop node systemd
-_host systemctl disable --now piraeus-satellite.service
-
 # install runc
-mkdir -vp /opt/piraeus/bin
-cp -vuf /usr/bin/runc "/opt/piraeus/bin/"
+_install_runc satellite
 
-# create oci dir
-oci_dir=/opt/piraeus/satellite/oci
-rm -fr "$oci_dir"
-rootfs_dir="${oci_dir}/rootfs"
-mkdir -vp "$rootfs_dir"
-
-# install oci config
-ENV="$( printenv | sed 's/^/"/; s/$/",/' )"
-export ENV
-envsubst < /oci/satellite.config.json | jq '.' > "${oci_dir}/config.json"
-
-# install oci rootfs
-container_id="$( docker create "$SERVER_IMG" )"
-_host sh -c "docker export "$container_id" | tar -C "$rootfs_dir" --checkpoint=100 --checkpoint-action=exec='printf .' -xf -"
-echo
-_host docker rm -f "$container_id"
-
-# install resolv.conf
-cp -vf /etc/resolv.conf "${oci_dir}/"
-
-# install systemd
-cp -vuf /oci/satellite.service /etc/systemd/system/piraeus-satellite.service
-
-# start systemd
-_host systemctl daemon-reload
-_host systemctl enable --now piraeus-satellite.service
 
 # add default storage pool
 SECONDS=0

@@ -6,7 +6,7 @@ metadata:
 data:
   INIT_DEBUG: "false"
   LS_CONTROLLERS: piraeus-controller.piraeus-system.svc.cluster.local:3370
-  SERVER_IMG: quay.azk8s.cn/piraeusdatastore/piraeus-server:v1.4.2
+  SERVER_IMG: quay.io/piraeusdatastore/piraeus-server:v1.4.2
   POOL_BASE_DIR: /var/lib/piraeus/storagepools
   DRBD_IMG_TAG: v9.0.21
   DRBD_IMG_PULL_POLICY: IfNotPresent
@@ -38,15 +38,15 @@ spec:
       hostIPC: true
       dnsPolicy: ClusterFirstWithHostNet
       containers:
-      - name: oci
+      - name: oci-monitor
         image: daocloud.io/piraeus/piraeus-oci:v0.1
         imagePullPolicy: Always
         securityContext:
           privileged: true
         resources:
           limits:
-            cpu: 100m
-            memory: 100Mi
+            cpu: 200m
+            memory: 200Mi
         envFrom:
         - configMapRef:
             name: piraeus-node
@@ -69,6 +69,12 @@ spec:
               fieldPath: status.hostIP
         args:
         - node
+        readinessProbe:
+          successThreshold: 3
+          failureThreshold: 3
+          tcpSocket:
+            port: 3366
+          periodSeconds: 5
         volumeMounts:
         - name: timezone
           mountPath: /etc/localtime
@@ -88,12 +94,6 @@ spec:
           mountPath: /opt/piraeus
         - name: var-lib-piraeus
           mountPath: /var/lib/piraeus
-        readinessProbe:
-          successThreshold: 3
-          failureThreshold: 3
-          tcpSocket:
-            port: 3366
-          periodSeconds: 5
       volumes:
       - name: timezone
         hostPath:

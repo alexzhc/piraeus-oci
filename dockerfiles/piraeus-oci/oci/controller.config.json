@@ -143,13 +143,13 @@
              "type": "bind"
         },
         {
-             "destination": "/etc/resolv.conf",
-             "options": [
-                     "ro",
-                     "rbind"
-             ],
-             "source": "/etc/resolv.conf",
-             "type": "bind"
+            "destination": "/etc/resolv.conf",
+            "options": [
+                    "ro",
+                    "rbind"
+            ],
+            "source": "/opt/piraeus/controller/oci/resolv.conf",
+            "type": "bind"
         },
         {
             "destination": "/etc/localtime",
@@ -176,6 +176,15 @@
                 "rbind"
             ],
             "source": "/var/log",
+            "type": "bind"
+        },
+        {
+            "destination": "/var/lib/piraeus",
+            "options": [
+                "rw",
+                "rbind"
+            ],
+            "source": "/var/lib/piraeus",
             "type": "bind"
         }
     ],
