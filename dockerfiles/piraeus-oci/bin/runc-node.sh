@@ -2,6 +2,9 @@
 
 source lib.runc.sh
 
+# install runc
+_install_runc satellite
+
 # wait until controller is up
 SECONDS=0
 while [ "$SECONDS" -lt '3600' ];  do
@@ -14,12 +17,12 @@ while [ "$SECONDS" -lt '3600' ];  do
     sleep 1
 done
 
+# start runc
+_start_runc satellite
+
 # register node to cluster
 [[ "$( linstor --machine node list --node "$NODE_NAME" | jq -r '.[0].nodes[0]' )" == 'null' ]] && \
 linstor node create --node-type Satellite "$NODE_NAME" "$NODE_IP"
-
-# install runc
-_install_runc satellite
 
 
 # add default storage pool

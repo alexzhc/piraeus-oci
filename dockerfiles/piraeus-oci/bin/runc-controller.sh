@@ -5,6 +5,9 @@ source lib.runc.sh
 # get etcd endpoints from linstor.toml
 echo Etcd endpoints are:
 echo -e "${ETCD_ENDPOINTS/,/\n}"
+
+# install runc
+_install_runc controller
  
 # wait until etcd is up 
 SECONDS=0
@@ -28,8 +31,9 @@ connection_url = "etcd://${ETCD_ENDPOINTS}"
 EOF
 cat /init/etc/linstor/linstor.toml
 
-# install runc
-_install_runc controller
+
+# start runc
+_start_runc controller
 
 # main loop
 set +x

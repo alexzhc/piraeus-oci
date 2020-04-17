@@ -34,6 +34,17 @@ _install_runc() {
     # install resolv.conf
     cp -vf /etc/resolv.conf "${oci_dir}/"
 
+    # replace lvm binary with nsenter
+if [ "$MAP_HOST_LVM" = 'true' ]; then
+    lvmpath="${rootfs_dir}/sbin/lvm"
+    mv -vf "$lvmpath" "${lvmpath}.distro"
+    cat > "$lvmpath" <<'EOF'
+#!/bin/sh
+nsenter --target 1 --mount -- "$(basename $0)" "$@"
+EOF
+    chmod +x "$lvmpath"
+fi
+
     # drop client script
     mkdir -vp /opt/piraeus/client 
     cat > /opt/piraeus/client/linstor <<EOF
@@ -44,14 +55,16 @@ EOF
 
     # install systemd
     cp -vuf /oci/"$component".service /etc/systemd/system/piraeus-"$component".service
+}
 
+_start_runc() {
+    component="$1"
     # start systemd
     _host systemctl daemon-reload
     _host systemctl enable --now piraeus-"$component".service
-
 }
 
-_curl () {
+_curl() {
     curl -Ss --connect-timeout 1 --retry 3 --retry-delay 0 "$@"
 }
 

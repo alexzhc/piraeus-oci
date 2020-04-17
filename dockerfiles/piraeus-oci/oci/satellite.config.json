@@ -1,150 +1,168 @@
 {
-    "ociVersion": "1.0.0",
-    "process": {
-        "terminal": false,
-        "user": {
-            "uid": 0,
-            "gid": 0
-        },
-        "args": [
-            "/usr/share/linstor-server/bin/Satellite",
-            "--logs=/var/log/linstor-satellite",
-            "--config-directory=/etc/linstor",
-            "--skip-hostname-check"
+    "linux": {
+        "maskedPaths": [
+            "/proc/kcore",
+            "/proc/latency_stats",
+            "/proc/timer_list",
+            "/proc/timer_stats",
+            "/proc/sched_debug"
         ],
-        "env": [
-            ${ENV}
-            "TERM=xterm"
-        ],
-        "cwd": "/",
-        "capabilities": {
-            "bounding": [
-                "CAP_AUDIT_WRITE",
-                "CAP_KILL",
-                "CAP_NET_BIND_SERVICE"
-            ],
-            "effective": [
-                "CAP_AUDIT_WRITE",
-                "CAP_KILL",
-                "CAP_NET_BIND_SERVICE"
-            ],
-            "inheritable": [
-                "CAP_AUDIT_WRITE",
-                "CAP_KILL",
-                "CAP_NET_BIND_SERVICE"
-            ],
-            "permitted": [
-                "CAP_AUDIT_WRITE",
-                "CAP_KILL",
-                "CAP_NET_BIND_SERVICE"
-            ],
-            "ambient": [
-                "CAP_AUDIT_WRITE",
-                "CAP_KILL",
-                "CAP_NET_BIND_SERVICE"
-            ]
-        },
-        "rlimits": [
+        "namespaces": [
             {
-                "type": "RLIMIT_NOFILE",
-                "hard": 1024,
-                "soft": 1024
+                "type": "mount"
+            },
+            {
+                "type": "uts"
             }
         ],
-        "noNewPrivileges": false
+        "readonlyPaths": [
+            "/proc/asound",
+            "/proc/bus",
+            "/proc/fs",
+            "/proc/irq",
+            "/sys/firmware"
+        ],
+        "resources": {
+            "blockIO": {},
+            "cpu": {
+                "shares": 0
+            },
+            "devices": [
+                {
+                    "access": "rwm",
+                    "allow": true
+                }
+            ],
+            "pids": {
+                "limit": 0
+            }
+        },
+        "rootfsPropagation": "shared"
     },
-    "root": {
-        "path": "rootfs",
-        "readonly": true
-    },
-    "hostname": "runc",
     "mounts": [
         {
+            "destination": "/dev",
+            "options": [
+                "rbind",
+                "rprivate"
+            ],
+            "source": "/dev",
+            "type": "bind"
+        },
+        {
+            "destination": "/etc/hosts",
+            "options": [
+                "rbind",
+                "rprivate",
+                "rw"
+            ],
+            "source": "/etc/hosts",
+            "type": "bind"
+        },
+        {
+            "destination": "/etc/resolv.conf",
+            "options": [
+                "rbind",
+                "ro",
+                "rprivate"
+            ],
+            "source": "/opt/piraeus/satellite/oci/resolv.conf",
+            "type": "bind"
+        },
+        {
+            "destination": "/lib/modules",
+            "options": [
+                "rbind",
+                "rprivate"
+            ],
+            "source": "/lib/modules",
+            "type": "bind"
+        },
+        {
             "destination": "/proc",
-            "type": "proc",
-            "source": "proc"
-        },
-        {
-            "destination": "/dev/pts",
-            "type": "devpts",
-            "source": "devpts",
-            "options": [
-                "nosuid",
-                "noexec",
-                "newinstance",
-                "ptmxmode=0666",
-                "mode=0620",
-                "gid=5"
-            ]
-        },
-        {
-            "destination": "/dev/shm",
-            "type": "tmpfs",
-            "source": "shm",
-            "options": [
-                "nosuid",
-                "noexec",
-                "nodev",
-                "mode=1777",
-                "size=65536k"
-            ]
-        },
-        {
-            "destination": "/dev/mqueue",
-            "type": "mqueue",
-            "source": "mqueue",
             "options": [
                 "nosuid",
                 "noexec",
                 "nodev"
-            ]
+            ],
+            "source": "proc",
+            "type": "proc"
+        },
+        {
+            "destination": "/run/docker",
+            "options": [
+                "rbind",
+                "rprivate"
+            ],
+            "source": "/run/docker",
+            "type": "bind"
         },
         {
             "destination": "/sys",
-            "type": "sysfs",
-            "source": "sysfs",
             "options": [
                 "nosuid",
                 "noexec",
                 "nodev"
-            ]
+            ],
+            "source": "sysfs",
+            "type": "sysfs"
         },
         {
             "destination": "/sys/fs/cgroup",
-            "type": "cgroup",
-            "source": "cgroup",
             "options": [
                 "nosuid",
                 "noexec",
-                "nodev",
-                "relatime"
-            ]
-        },
-        {
-             "destination": "/etc/hosts",
-             "options": [
-                     "ro",
-                     "rbind"
-             ],
-             "source": "/etc/hosts",
-             "type": "bind"
-        },
-        {
-             "destination": "/etc/resolv.conf",
-             "options": [
-                     "ro",
-                     "rbind"
-             ],
-             "source": "/opt/piraeus/satellite/oci/resolv.conf",
-             "type": "bind"
-        },
-        {
-            "destination": "/etc/localtime",
-            "options": [
-                "ro",
-                "rbind"
+                "nodev"
             ],
-            "source": "/etc/localtime",
+            "source": "cgroup",
+            "type": "cgroup"
+        },
+        {
+            "destination": "/usr/src",
+            "options": [
+                "rbind",
+                "rprivate"
+            ],
+            "source": "/usr/src",
+            "type": "bind"
+        },
+        {
+            "destination": "/var/run/dbus",
+            "options": [
+                "rbind",
+                "rprivate"
+            ],
+            "source": "/var/run/dbus",
+            "type": "bind"
+        },
+        {
+            "destination": "/run/lvm",
+            "options": [
+                "",
+                "rbind",
+                "rprivate"
+            ],
+            "source": "/run/lvm",
+            "type": "bind"
+        },
+        {
+            "destination": "/var/lock",
+            "options": [
+                "rw",
+                "rbind",
+                "rprivate"
+            ],
+            "source": "/var/lock",
+            "type": "bind"
+        },
+        {
+            "destination": "/run/udev",
+            "options": [
+                "",
+                "rbind",
+                "rprivate"
+            ],
+            "source": "/run/udev",
             "type": "bind"
         },
         {
@@ -182,55 +200,163 @@
             ],
             "source": "/var/log",
             "type": "bind"
-        },
-        {
-            "destination": "/dev",
-            "options": [
-                "rw",
-                "rbind"
-            ],
-            "source": "/dev",
-            "type": "bind"
         }
     ],
-    "linux": {
-        "resources": {
-            "devices": [
-                {
-                    "allow": false,
-                    "access": "rwm"
-                }
+    "ociVersion": "1.0.0",
+    "process": {
+        "args": [
+            "/usr/share/linstor-server/bin/Satellite",
+            "--logs=/var/log/linstor-satellite",
+            "--config-directory=/etc/linstor",
+            "--skip-hostname-check"
+        ],
+        "capabilities": {
+            "ambient": [
+                "CAP_CHOWN",
+                "CAP_DAC_OVERRIDE",
+                "CAP_DAC_READ_SEARCH",
+                "CAP_FSETID",
+                "CAP_FOWNER",
+                "CAP_MKNOD",
+                "CAP_NET_RAW",
+                "CAP_SETGID",
+                "CAP_SETUID",
+                "CAP_SETFCAP",
+                "CAP_SETPCAP",
+                "CAP_NET_BIND_SERVICE",
+                "CAP_NET_ADMIN",
+                "CAP_SYS_CHROOT",
+                "CAP_KILL",
+                "CAP_AUDIT_WRITE",
+                "CAP_IPC_LOCK",
+                "CAP_SYS_ADMIN",
+                "CAP_SYS_MODULE",
+                "CAP_SYS_PTRACE",
+                "CAP_LINUX_IMMUTABLE",
+                "CAP_SYS_RESOURCE",
+                "CAP_SYS_RAWIO"
+            ],
+            "bounding": [
+                "CAP_CHOWN",
+                "CAP_DAC_OVERRIDE",
+                "CAP_DAC_READ_SEARCH",
+                "CAP_FSETID",
+                "CAP_FOWNER",
+                "CAP_MKNOD",
+                "CAP_NET_RAW",
+                "CAP_SETGID",
+                "CAP_SETUID",
+                "CAP_SETFCAP",
+                "CAP_SETPCAP",
+                "CAP_NET_BIND_SERVICE",
+                "CAP_NET_ADMIN",
+                "CAP_SYS_CHROOT",
+                "CAP_KILL",
+                "CAP_AUDIT_WRITE",
+                "CAP_IPC_LOCK",
+                "CAP_SYS_ADMIN",
+                "CAP_SYS_MODULE",
+                "CAP_SYS_PTRACE",
+                "CAP_LINUX_IMMUTABLE",
+                "CAP_SYS_RESOURCE",
+                "CAP_SYS_RAWIO"
+            ],
+            "effective": [
+                "CAP_CHOWN",
+                "CAP_DAC_OVERRIDE",
+                "CAP_DAC_READ_SEARCH",
+                "CAP_FSETID",
+                "CAP_FOWNER",
+                "CAP_MKNOD",
+                "CAP_NET_RAW",
+                "CAP_SETGID",
+                "CAP_SETUID",
+                "CAP_SETFCAP",
+                "CAP_SETPCAP",
+                "CAP_NET_BIND_SERVICE",
+                "CAP_NET_ADMIN",
+                "CAP_SYS_CHROOT",
+                "CAP_KILL",
+                "CAP_AUDIT_WRITE",
+                "CAP_IPC_LOCK",
+                "CAP_SYS_ADMIN",
+                "CAP_SYS_MODULE",
+                "CAP_SYS_PTRACE",
+                "CAP_LINUX_IMMUTABLE",
+                "CAP_SYS_RESOURCE",
+                "CAP_SYS_RAWIO"
+            ],
+            "inheritable": [
+                "CAP_CHOWN",
+                "CAP_DAC_OVERRIDE",
+                "CAP_DAC_READ_SEARCH",
+                "CAP_FSETID",
+                "CAP_FOWNER",
+                "CAP_MKNOD",
+                "CAP_NET_RAW",
+                "CAP_SETGID",
+                "CAP_SETUID",
+                "CAP_SETFCAP",
+                "CAP_SETPCAP",
+                "CAP_NET_BIND_SERVICE",
+                "CAP_NET_ADMIN",
+                "CAP_SYS_CHROOT",
+                "CAP_KILL",
+                "CAP_AUDIT_WRITE",
+                "CAP_IPC_LOCK",
+                "CAP_SYS_ADMIN",
+                "CAP_SYS_MODULE",
+                "CAP_SYS_PTRACE",
+                "CAP_LINUX_IMMUTABLE",
+                "CAP_SYS_RESOURCE",
+                "CAP_SYS_RAWIO"
+            ],
+            "permitted": [
+                "CAP_CHOWN",
+                "CAP_DAC_OVERRIDE",
+                "CAP_DAC_READ_SEARCH",
+                "CAP_FSETID",
+                "CAP_FOWNER",
+                "CAP_MKNOD",
+                "CAP_NET_RAW",
+                "CAP_SETGID",
+                "CAP_SETUID",
+                "CAP_SETFCAP",
+                "CAP_SETPCAP",
+                "CAP_NET_BIND_SERVICE",
+                "CAP_NET_ADMIN",
+                "CAP_SYS_CHROOT",
+                "CAP_KILL",
+                "CAP_AUDIT_WRITE",
+                "CAP_IPC_LOCK",
+                "CAP_SYS_ADMIN",
+                "CAP_SYS_MODULE",
+                "CAP_SYS_PTRACE",
+                "CAP_LINUX_IMMUTABLE",
+                "CAP_SYS_RESOURCE",
+                "CAP_SYS_RAWIO"
             ]
         },
-        "namespaces": [
+        "cwd": "/",
+        "env": [
+            "GOMAXPROCS=64",
+            "GOTRACEBACK=crash",
+            "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "TERM=xterm"
+        ],
+        "rlimits": [
             {
-                "type": "pid"
-            },
-            {
-                "type": "ipc"
-            },
-            {
-                "type": "uts"
-            },
-            {
-                "type": "mount"
+                "hard": 65536,
+                "soft": 65536,
+                "type": "RLIMIT_NOFILE"
             }
         ],
-        "maskedPaths": [
-            "/proc/kcore",
-            "/proc/latency_stats",
-            "/proc/timer_list",
-            "/proc/timer_stats",
-            "/proc/sched_debug",
-            "/sys/firmware"
-        ],
-        "readonlyPaths": [
-            "/proc/asound",
-            "/proc/bus",
-            "/proc/fs",
-            "/proc/irq",
-            "/proc/sys",
-            "/proc/sysrq-trigger"
-        ]
+        "user": {
+            "gid": 0,
+            "uid": 0
+        }
+    },
+    "root": {
+        "path": "rootfs"
     }
 }

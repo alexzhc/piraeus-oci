@@ -12,6 +12,7 @@ data:
   POOL_BASE_DIR: #@ "/var/lib/" + name() + "/storagepools"
   DRBD_IMG_TAG: v9.0.21 #! "none" will skip drbd installation
   DRBD_IMG_PULL_POLICY: IfNotPresent
+  MAP_HOST_LVM: 'true'
 ---
 apiVersion: apps/v1
 kind: DaemonSet
