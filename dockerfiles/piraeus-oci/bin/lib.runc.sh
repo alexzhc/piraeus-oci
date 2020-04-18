@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 _host() { 
     nsenter -t1 -m "$@" 
@@ -62,6 +62,7 @@ _start_runc() {
     # start systemd
     _host systemctl daemon-reload
     _host systemctl enable --now piraeus-"$component".service
+    _host journalctl -fu piraeus-"$component".service &
 }
 
 _curl() {
@@ -70,4 +71,58 @@ _curl() {
 
 _etcd_is_healthy() {
     [[ "$( _curl "$1"/health | jq -r '.health' )" == 'true' ]]
+}
+
+_install_kmod() {
+    echo '* Enable dm_thin_pool'
+    lsmod | grep -q ^dm_thin_pool || modprobe dm_thin_pool
+    lsmod | grep -E '^dm_thin_pool|^Module'
+
+    # compile and install drbd kernel module
+    if lsmod | grep -q drbd ; then
+        echo 'DRBD module is already loaded'
+        lsmod | grep -E '^drbd|^Module'
+        modinfo drbd || echo "* WARN: DRBD binary is missing"
+    elif [[ "v$( modinfo drbd | awk '/^version: / {print $2}' )" == "${DRBD_IMG_TAG}-1" ]] ; then
+        echo "* Load drbd module version \"${DRBD_IMG_TAG}\""
+        modprobe drbd
+        modprobe drbd_transport_tcp
+        lsmod | grep -E '^drbd|^Module'
+        modinfo drbd
+    elif [[ ${DRBD_IMG_TAG,,} == 'none' ]]; then
+        echo '* Skip drbd installation'
+    else
+        # find image name according to linux distribution
+        if [[ "$( uname -r )" =~ el7 ]]; then
+            drbd_image_name=drbd9-centos7
+        elif [[ "$( uname -r )" =~ el8 ]]; then
+            drbd_image_name=drbd9-centos8
+        elif [[ "$( uname -a )" =~ Ubuntu ]]; then
+            drbd_image_name=drbd9-bionic
+            [[ "$( uname -r )" =~ 4\.15\. ]] && mount_usr_lib='true'
+        fi
+        # run drbd9 driver loader
+        drbd_image_url="${DRBD_IMG_REPO}/${drbd_image_name}:${DRBD_IMG_TAG}"
+        echo "* Compile and load drbd module by image \"${drbd_image_url}\""
+        if [[ "${DRBD_IMG_PULL_POLICY,,}" == "always" ]] || [[ "$( _docker_image_inspect "$drbd_image_url" | jq '.Id' )" == "null" ]]; then
+            docker pull "$drbd_image_url"
+        fi
+
+        if [[ "$mount_usr_lib" == "true" ]]; then
+            docker run --rm \
+                --privileged \
+                -e LB_INSTALL=yes \
+                -v /lib/modules:/lib/modules \
+                -v /usr/src:/usr/src:ro \
+                -v /usr/lib:/usr/lib:ro \
+                "$drbd_image_url"
+        else
+            docker run --rm \
+                --privileged \
+                -e LB_INSTALL=yes \
+                -v /lib/modules:/lib/modules \
+                -v /usr/src:/usr/src:ro \
+                "$drbd_image_url"
+        fi
+    fi
 }

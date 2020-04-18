@@ -2,6 +2,9 @@
 
 source lib.runc.sh
 
+# install kmod
+_install_kmod
+
 # install runc
 _install_runc satellite
 
