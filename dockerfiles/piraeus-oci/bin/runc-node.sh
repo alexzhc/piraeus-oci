@@ -8,6 +8,22 @@ _install_kmod
 # install runc
 _install_runc satellite
 
+# edit drbd.conf
+cat > /etc/drbd.conf << 'EOF'
+include "/etc/drbd.d/*.res";
+include "/var/lib/linstor.d/*.res";
+EOF
+
+# drop drbdadm script
+mkdir -vp /opt/piraeus/bin
+cat > /opt/piraeus/bin/drbdadm << 'EOF'
+#!/bin/sh
+/opt/piraeus/bin/runc exec -t piraeus-satellite \
+drbdadm $@
+EOF
+chmod +x /opt/piraeus/bin/drbdadm
+_host ln -fs /opt/piraeus/bin/drbdadm /usr/local/bin/drbdadm
+
 # wait until controller is up
 SECONDS=0
 while [ "$SECONDS" -lt '3600' ];  do

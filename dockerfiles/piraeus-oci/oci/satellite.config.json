@@ -339,6 +339,7 @@
         },
         "cwd": "/",
         "env": [
+            ${ENV}
             "GOMAXPROCS=64",
             "GOTRACEBACK=crash",
             "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",

@@ -6,7 +6,7 @@ metadata:
   namespace: #@ namespace()
 data:
   INIT_DEBUG: 'false'
-  SERVER_IMG: quay.io/piraeusdatastore/piraeus-server:v1.4.2
+  SERVER_IMG: quay.io/piraeusdatastore/piraeus-server:v1.6.1
   ETCD_ENDPOINTS: #@ etcdendpoint()
   LS_CONTROLLERS: #@ controllerhostport()
 ---

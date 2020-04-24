@@ -46,12 +46,14 @@ EOF
 fi
 
     # drop client script
-    mkdir -vp /opt/piraeus/client 
+    mkdir -vp /opt/piraeus/client
     cat > /opt/piraeus/client/linstor <<EOF
 #!/bin/sh
 /opt/piraeus/bin/runc exec -t piraeus-${component} \
 linstor --no-utf8 \$@
 EOF
+    chmod +x /opt/piraeus/client/linstor
+    _host ln -fs /opt/piraeus/client/linstor /usr/local/bin/linstor
 
     # install systemd
     cp -vuf /oci/"$component".service /etc/systemd/system/piraeus-"$component".service

@@ -5,7 +5,7 @@ metadata:
   namespace: piraeus-system
 data:
   LS_CONTROLLERS: piraeus-controller.piraeus-system.svc.cluster.local:3370
-  SERVER_IMG: quay.io/piraeusdatastore/piraeus-server:v1.4.2
+  SERVER_IMG: quay.io/piraeusdatastore/piraeus-server:v1.6.1
   POOL_BASE_DIR: /var/lib/piraeus/storagepools
   DRBD_IMG_REPO: quay.io/piraeusdatastore
   DRBD_IMG_TAG: v9.0.22
@@ -83,6 +83,8 @@ spec:
           mountPath: /var/run/docker.sock
         - name: systemd
           mountPath: /etc/systemd/system
+        - name: drbd-conf
+          mountPath: /etc/drbd.conf
         - name: lib-linstor-d
           mountPath: /var/lib/linstor.d
         - name: etc-linstor
@@ -105,6 +107,10 @@ spec:
       - name: var-lib-piraeus
         hostPath:
           path: /var/lib/piraeus
+      - name: drbd-conf
+        hostPath:
+          path: /etc/drbd.conf
+          type: FileOrCreate
       - name: lib-linstor-d
         hostPath:
           path: /var/lib/linstor.d

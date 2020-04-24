@@ -7,7 +7,7 @@ metadata:
 data:
   #! Must be an FQDN here, otherwise it might not resolve!
   LS_CONTROLLERS: #@ controllerhostport()
-  SERVER_IMG: quay.io/piraeusdatastore/piraeus-server:v1.4.2
+  SERVER_IMG: quay.io/piraeusdatastore/piraeus-server:v1.6.1
   POOL_BASE_DIR: #@ "/var/lib/" + name() + "/storagepools"
   DRBD_IMG_REPO: quay.io/piraeusdatastore
   DRBD_IMG_TAG: v9.0.22 #! "none" will skip drbd installation
@@ -90,6 +90,8 @@ spec:
           mountPath: /var/run/docker.sock
         - name: systemd
           mountPath: /etc/systemd/system
+        - name: drbd-conf
+          mountPath: /etc/drbd.conf
         - name: lib-linstor-d
           mountPath: /var/lib/linstor.d
         - name: etc-linstor
@@ -112,6 +114,10 @@ spec:
       - name: #@ "var-lib-" + name()
         hostPath:
           path: #@ "/var/lib/" + name()
+      - name: drbd-conf
+        hostPath:
+          path: /etc/drbd.conf
+          type: FileOrCreate 
       - name: lib-linstor-d
         hostPath:
           path: /var/lib/linstor.d
