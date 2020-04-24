@@ -307,6 +307,10 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
+              - key: piraeus/controller
+                operator: In
+                values:
+                - "true"
               - key: node-role.kubernetes.io/master
                 operator: DoesNotExist
       tolerations:
